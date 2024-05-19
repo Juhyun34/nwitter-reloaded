@@ -1,64 +1,78 @@
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { useState } from "react";
+import { RouterProvider, createBrowserRouter } from "react-router-dom";
+import { createGlobalStyle, styled } from "styled-components";
+import reset from "styled-reset";
+import { useEffect, useState } from "react";
+import ProtectedRoute from "../components/protected-route";
+import Layout from "../components/layout";
+import Home from "./home";
+import Profile from "./profile";
+import Login from "./login";
+import CreateAccount from "./login";
 import { auth } from "../firebase";
-import { Link, useNavigate } from "react-router-dom";
-import { FirebaseError } from "firebase/app";
-import { Input, Switcher, Title, Wrapper, Error, Form } from "../components/auth-components";
-import GithubButton from "../components/github-btn";
+import LoadingScreen from "../components/loading-screen";
 
-export default function CreateAccount() {
-    const navigate = useNavigate();
-    const [isLoading, setLoading] = useState(false);
-    const [name, setName] = useState("");
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [error, setError] = useState("");
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: (
+      <ProtectedRoute>
+        <Layout />
+      </ProtectedRoute>
+    ),
+    children: [
+      {
+        path: "",
+        element: <Home />,
+      },
+      {
+        path: "profile",
+        element: <Profile />,
+      },
+    ],
+  },
+  {
+    path: "/login",
+    element: <Login />,
+  },
+  {
+    path: "/create-account",
+    element: <CreateAccount />,
+  },
+]);
 
-    const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const {target: {name, value}} = e;
-        if(name === "name") {
-            setName(value);
-        } else if(name === "email") {
-            setEmail(value)
-        } else if(name === "password") {
-            setPassword(value)
-        }
-    }
+const GlobalStyles = createGlobalStyle`
+  ${reset};
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    background-color: black;
+    color:white;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  }
+`;
 
-    const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        setError("");
-        if(isLoading || name === "" || email === "" || password === "") return;
-        try {
-            setLoading(true);
-            const credentials = await createUserWithEmailAndPassword(auth, email, password);
-            console.log(credentials.user);
-            await updateProfile(credentials.user, {
-                displayName: name,
-            });
-            navigate("/")
-        } catch (e) {
-            if(e instanceof FirebaseError) {
-                setError(e.message);
-            }
-        } finally {
-            setLoading(false);
-        }
-        console.log(name, email, password);
-    }
+const Wrapper = styled.div`
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+`;
 
-    return <Wrapper>
-        <Title>Join ❌</Title>
-        <Form onSubmit={onSubmit}>
-            <Input name="name" value={name} placeholder="Name" type="text" required onChange={onChange} />
-            <Input name="email" value={email} placeholder="Email" type="email" required onChange={onChange} />
-            <Input name="password" value={password} placeholder="Password" type="password" onChange={onChange} />
-            <Input placeholder="Create Account" value={isLoading ? "Loading..." : "Create Account"} type="submit"/>
-        </Form>
-        {error !== "" ? <Error>{error}</Error> : null}
-        <Switcher>
-            Already have an account? <Link to="/login">Log in &rarr;</Link>
-        </Switcher>
-        <GithubButton />
-    </Wrapper> 
+function App() {
+  const [isLoading, setLoading] = useState(true);
+  const init = async () => {
+    await auth.authStateReady();
+    setLoading(false);
+  };
+  useEffect(() => {
+    init();
+  }, []);
+  return (
+    <Wrapper>
+      <GlobalStyles />
+      {isLoading ? <LoadingScreen /> : <RouterProvider router={router} />}
+    </Wrapper>
+  );
 }
+
+export default App;

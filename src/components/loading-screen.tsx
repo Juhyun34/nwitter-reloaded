@@ -1,4 +1,5 @@
 import { styled } from "styled-components";
+
 const Wrapper = styled.div`
   height: 100vh;
   display: flex;
@@ -11,5 +12,9 @@ const Text = styled.span`
 `;
 
 export default function LoadingScreen() {
-  return <Wrapper><Text>Loading...</Text></Wrapper>
+  return (
+    <Wrapper>
+      <Text>Loading...</Text>
+    </Wrapper>
+  );
 }
